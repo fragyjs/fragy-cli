@@ -1,3 +1,3 @@
-import ProjectModule from './project';
+import Initializer from './initializer';
 
-export default [ProjectModule];
+export default [Initializer];

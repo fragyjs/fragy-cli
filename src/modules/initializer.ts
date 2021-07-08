@@ -155,21 +155,21 @@ const mount = (app: Application, program: commander.Command): void => {
         { encoding: 'utf-8' },
       );
       // install fragy
-      app.logger.debug('Installing fragy...');
-      try {
-        childProcess.execSync(`npm install fragy --save`, { stdio: 'inherit' });
-      } catch (err) {
-        app.logger.error('Failed to install fragy.');
-        return;
-      }
-      // install theme
-      app.logger.debug(`Installing theme [${userConfig.theme}] for fragy...`);
-      try {
-        childProcess.execSync(`npm install ${userConfig.theme} --save`, { stdio: 'inherit' });
-      } catch (err) {
-        app.logger.error('Failed to install theme package.');
-        return;
-      }
+      // app.logger.debug('Installing fragy...');
+      // try {
+      //   childProcess.execSync(`npm install fragy --save`, { stdio: 'inherit' });
+      // } catch (err) {
+      //   app.logger.error('Failed to install fragy.');
+      //   return;
+      // }
+      // // install theme
+      // app.logger.debug(`Installing theme [${userConfig.theme}] for fragy...`);
+      // try {
+      //   childProcess.execSync(`npm install ${userConfig.theme} --save`, { stdio: 'inherit' });
+      // } catch (err) {
+      //   app.logger.error('Failed to install theme package.');
+      //   return;
+      // }
       // write config
       const fragyConfigPath = path.resolve(app.workDir, './fragy.config.js');
       const fragyConfigContent = fragyConfigTemplate
@@ -224,13 +224,14 @@ const mount = (app: Application, program: commander.Command): void => {
               if (!prompt.confirm) {
                 return;
               }
+              await fsp.unlink(gitIgnorePath);
             }
-            await fsp.unlink(gitIgnorePath);
             await fsp.writeFile(gitIgnorePath, gitIgnoreTemplate.trim(), { encoding: 'utf-8' });
           };
           await initGitIgnore();
           // do init
           childProcess.execSync('git init');
+          childProcess.execSync('git config core.autocrlf false');
           childProcess.execSync('git add .');
           childProcess.execSync('git commit -m "First commit by fragy-cli"');
         }
@@ -256,7 +257,9 @@ const mount = (app: Application, program: commander.Command): void => {
           'fragy serve',
         )} to start a local server.\nIf you want to build your project, use ${chalk.yellow(
           'fragy build',
-        )}.\n\nThank you for trying to use fragy, if you like this project.\nIt's welcome to give us a star at GitHub. ❤`,
+        )}.\n\n${chalk.grey(
+          `Thank you for using Fragy, if you like this project.\nIt's welcome to give us a star at GitHub. ❤`,
+        )}`,
       );
     });
 };

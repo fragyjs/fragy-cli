@@ -183,7 +183,7 @@ const mount = (app: Application, program: commander.Command): void => {
       if (!fs.existsSync(userPostsFolder)) {
         fs.mkdirSync(userPostsFolder, { recursive: true });
       }
-      const firstPostPath = path.resolve(userPostsFolder, './helloworld.md');
+      const firstPostPath = path.resolve(userPostsFolder, './hello-world.md');
       await fsp.writeFile(
         firstPostPath,
         firstPostTemplate[userConfig.locale]

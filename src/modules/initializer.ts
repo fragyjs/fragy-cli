@@ -155,21 +155,21 @@ const mount = (app: Application, program: commander.Command): void => {
         { encoding: 'utf-8' },
       );
       // install fragy
-      // app.logger.debug('Installing fragy...');
-      // try {
-      //   childProcess.execSync(`npm install fragy --save`, { stdio: 'inherit' });
-      // } catch (err) {
-      //   app.logger.error('Failed to install fragy.');
-      //   return;
-      // }
-      // // install theme
-      // app.logger.debug(`Installing theme [${userConfig.theme}] for fragy...`);
-      // try {
-      //   childProcess.execSync(`npm install ${userConfig.theme} --save`, { stdio: 'inherit' });
-      // } catch (err) {
-      //   app.logger.error('Failed to install theme package.');
-      //   return;
-      // }
+      app.logger.debug('Installing fragy...');
+      try {
+        childProcess.execSync(`npm install fragy --save`, { stdio: 'inherit' });
+      } catch (err) {
+        app.logger.error('Failed to install fragy.');
+        return;
+      }
+      // install theme
+      app.logger.debug(`Installing theme [${userConfig.theme}] for fragy...`);
+      try {
+        childProcess.execSync(`npm install ${userConfig.theme} --save`, { stdio: 'inherit' });
+      } catch (err) {
+        app.logger.error('Failed to install theme package.');
+        return;
+      }
       // write config
       const fragyConfigPath = path.resolve(app.workDir, './fragy.config.js');
       const fragyConfigContent = fragyConfigTemplate

@@ -16,6 +16,7 @@ interface FragyInitUserConfig {
   projectAuthor: string;
   title: string;
   subtitle: string;
+  locale: string;
   theme: string;
 }
 
@@ -79,6 +80,22 @@ const mount = (app: Application, program: commander.Command): void => {
             }
             return true;
           },
+        },
+        {
+          type: 'list',
+          name: 'locale',
+          message: 'Main language of your site:',
+          default: 'zh-CN',
+          choices: [
+            {
+              name: '中文',
+              value: 'zh-CN',
+            },
+            {
+              name: 'English',
+              value: 'en',
+            },
+          ],
         },
         {
           type: 'list',
@@ -152,7 +169,8 @@ const mount = (app: Application, program: commander.Command): void => {
       const fragyConfigContent = fragyConfigTemplate
         .replace('{title}', userConfig.title)
         .replace('{subtitle}', userConfig.subtitle || '')
-        .replace('{theme}', userConfig.theme);
+        .replace('{theme}', userConfig.theme)
+        .replace('{locale}', userConfig.locale);
       await fsp.writeFile(fragyConfigPath, fragyConfigContent, { encoding: 'utf-8' });
       // create fragy user data folder
       const userPostsFolder = path.resolve(app.workDir, './.fragy/posts');

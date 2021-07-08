@@ -56,9 +56,9 @@ const mount = (app: Application, program: commander.Command): void => {
       server.listen(port);
       console.clear();
       console.log(
-        `\n\n  ${chalk.green('Fragy local preview server running at:')}\n\n    ${chalk.blue(
+        `\n ${chalk.green('Fragy local preview server running at:')}\n\n   ${chalk.blue(
           `- http://localhost:${port}`,
-        )}\n\n  ${chalk.yellow('Note this server is only for preview.')}\n\n`,
+        )}\n\n ${chalk.yellow('Note this server is only for preview.')}\n\n`,
       );
     });
 };

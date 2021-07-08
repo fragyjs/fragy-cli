@@ -10,13 +10,19 @@ import dayjs from 'dayjs';
 import { Application } from '../app';
 import { fragyConfigTemplate } from '../template/fragyConfig';
 import firstPostTemplate from '../template/firstPost';
+import gitIgnoreTemplate from '../template/gitignore';
+
+enum SupportedLocale {
+  zhCN = 'zh-CN',
+  en = 'en',
+}
 
 interface FragyInitUserConfig {
   projectName: string;
   projectAuthor: string;
   title: string;
   subtitle: string;
-  locale: string;
+  locale: SupportedLocale;
   theme: string;
 }
 
@@ -180,11 +186,57 @@ const mount = (app: Application, program: commander.Command): void => {
       const firstPostPath = path.resolve(userPostsFolder, './helloworld.md');
       await fsp.writeFile(
         firstPostPath,
-        firstPostTemplate.trim().replace('{date}', dayjs().format('YYYY-MM-DD HH:mm:ss')),
+        firstPostTemplate[userConfig.locale]
+          .trim()
+          .replace('{date}', dayjs().format('YYYY-MM-DD HH:mm:ss')),
         {
           encoding: 'utf-8',
         },
       );
+      // git init
+      const gitPath = path.resolve(app.workDir, './.git');
+      const initGitRepo = async () => {
+        if (fs.existsSync(gitPath)) {
+          return;
+        }
+        const userGitConfirm: Record<string, boolean> = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Do you wanna use git to manage your site?',
+            default: true,
+          },
+        ]);
+        if (userGitConfirm.confirm) {
+          // write .gitignore
+          const gitIgnorePath = path.resolve(app.workDir, './.gitignore');
+          const initGitIgnore = async () => {
+            if (!fs.existsSync(gitIgnorePath)) {
+              return;
+            }
+            // ask user to confirm modification
+            const prompt: Record<string, boolean> = await inquirer.prompt([
+              {
+                type: 'confirm',
+                name: 'confirm',
+                message: `An existing .gitignore is detected, are you sure you want to overwrite it?`,
+                default: false,
+              },
+            ]);
+            if (!prompt.confirm) {
+              return;
+            }
+            await fsp.unlink(gitIgnorePath);
+            await fsp.writeFile(gitIgnorePath, gitIgnoreTemplate.trim(), { encoding: 'utf-8' });
+          };
+          await initGitIgnore();
+          // do init
+          childProcess.execSync('git init');
+          childProcess.execSync('git add .');
+          childProcess.execSync('git commit -m "First commit by fragy-cli"');
+        }
+      };
+      await initGitRepo();
       // eslint-disable-next-line no-console
       console.log(
         `\n===========================\n${chalk.green(

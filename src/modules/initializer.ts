@@ -211,20 +211,19 @@ const mount = (app: Application, program: commander.Command): void => {
           // write .gitignore
           const gitIgnorePath = path.resolve(app.workDir, './.gitignore');
           const initGitIgnore = async () => {
-            if (!fs.existsSync(gitIgnorePath)) {
-              return;
-            }
-            // ask user to confirm modification
-            const prompt: Record<string, boolean> = await inquirer.prompt([
-              {
-                type: 'confirm',
-                name: 'confirm',
-                message: `An existing .gitignore is detected, are you sure you want to overwrite it?`,
-                default: false,
-              },
-            ]);
-            if (!prompt.confirm) {
-              return;
+            if (fs.existsSync(gitIgnorePath)) {
+              // ask user to confirm modification
+              const prompt: Record<string, boolean> = await inquirer.prompt([
+                {
+                  type: 'confirm',
+                  name: 'confirm',
+                  message: `An existing .gitignore is detected, are you sure you want to overwrite it?`,
+                  default: false,
+                },
+              ]);
+              if (!prompt.confirm) {
+                return;
+              }
             }
             await fsp.unlink(gitIgnorePath);
             await fsp.writeFile(gitIgnorePath, gitIgnoreTemplate.trim(), { encoding: 'utf-8' });

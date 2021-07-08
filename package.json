@@ -40,6 +40,8 @@
     "@types/chalk": "^2.2.0",
     "@types/commander": "^2.12.2",
     "@types/inquirer": "^7.3.2",
+    "@types/koa": "^2.13.4",
+    "@types/mime": "^2.0.3",
     "@types/superagent": "^4.1.11",
     "f2elint": "^1.2.0",
     "rollup": "^2.52.1",
@@ -50,8 +52,11 @@
     "commander": "^6.2.1",
     "dayjs": "^1.10.6",
     "inquirer": "^7.3.3",
+    "koa": "^2.13.1",
     "log4js": "^6.3.0",
+    "mime": "^2.5.2",
     "npm-api": "^1.0.1",
+    "portfinder": "^1.0.28",
     "prettier": "^2.3.1",
     "superagent": "^6.1.0"
   }

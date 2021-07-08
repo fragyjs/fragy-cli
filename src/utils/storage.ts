@@ -34,5 +34,8 @@ export const getStorage = () => {
       }
     },
   };
+  if (fs.existsSync(storage.path)) {
+    storage.data = JSON.parse(fs.readFileSync(storage.path, { encoding: 'utf-8' }));
+  }
   return storage;
 };

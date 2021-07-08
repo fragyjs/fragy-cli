@@ -7,6 +7,7 @@ export interface FragyStorage {
   data: Record<string, string>;
   get: (key: string) => string;
   set: (key: string, value: string) => void;
+  remove: (key: string) => void;
 }
 
 const storageDir = path.resolve(userDir, './.fragy');
@@ -25,6 +26,12 @@ export const getStorage = () => {
     set(key: string, value: string) {
       this.data[key] = value;
       fs.writeFileSync(this.path, JSON.stringify(this.data), { encoding: 'utf-8' });
+    },
+    remove(key: string) {
+      if (typeof this.data[key] !== 'undefined') {
+        delete this.data[key];
+        fs.writeFileSync(this.path, JSON.stringify(this.data), { encoding: 'utf-8' });
+      }
     },
   };
   return storage;

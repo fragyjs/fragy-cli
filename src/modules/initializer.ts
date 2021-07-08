@@ -237,6 +237,18 @@ const mount = (app: Application, program: commander.Command): void => {
         }
       };
       await initGitRepo();
+      // store path
+      const savePrompt: Record<string, boolean> = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'confirm',
+          message: 'Do you want to set this project to main project for further use?',
+          default: true,
+        },
+      ]);
+      if (savePrompt.confirm) {
+        app.storage.set('main_project_path', app.workDir);
+      }
       // eslint-disable-next-line no-console
       console.log(
         `\n===========================\n${chalk.green(

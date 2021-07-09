@@ -30,6 +30,7 @@ const createServer = (dir: string) => {
     // set body
     ctx.body = fs.createReadStream(filePath);
   });
+
   return server;
 };
 

@@ -1,6 +1,6 @@
 import commander from 'commander';
 import inquirer from 'inquirer';
-import childProcess from 'child_process';
+import open from 'open';
 import path from 'path';
 import fsp from 'fs/promises';
 import fs from 'fs';
@@ -8,17 +8,6 @@ import dayjs from 'dayjs';
 import newPostTemplate from '../template/newPost';
 import { Application } from '../app';
 import chalk from 'chalk';
-
-const getOpenCmd = () => {
-  switch (process.platform) {
-    case 'darwin':
-      return 'open';
-    case 'win32':
-      return 'start';
-    default:
-      return null;
-  }
-};
 
 const mount = async (app: Application, program: commander.Command) => {
   const cmd = program.command('create').description('Create things like post');
@@ -73,8 +62,7 @@ const mount = async (app: Application, program: commander.Command) => {
       app.logger.info('Your new post is ready, you can edit it now.');
       // open
       if (!options.noOpen) {
-        const openCmd = `${getOpenCmd()} ${newPostPath}`;
-        childProcess.exec(openCmd);
+        await open(newPostPath);
       }
     });
 };

@@ -124,8 +124,8 @@ const mount = (app: Application, program: commander.Command): void => {
           }
           // send refresh through websocket
           serverEvents.emit('refresh');
-          console.log('\u001Bc');
           // output message to console
+          console.log('\u001Bc');
           if (copyFailedError) {
             app.logger.error('Failed to generate feeds.', copyFailedError, '\n\n');
           }
@@ -134,7 +134,27 @@ const mount = (app: Application, program: commander.Command): void => {
               !copyFailedError && chalk.green(' New feeds were generated successfully.\n')
             }${serverMessage(port)}`,
           );
-        }, 100);
+        }, 500);
+      });
+      // watch config file
+      const configPath = path.resolve(app.workDir, './fragy.config.js');
+      const configWatcher = fs.watch(configPath, { encoding: 'utf-8' });
+      let configChangeTimeout: NodeJS.Timeout | null;
+      configWatcher.on('change', async () => {
+        if (configChangeTimeout) {
+          clearTimeout(configChangeTimeout);
+          configChangeTimeout = null;
+        }
+        configChangeTimeout = setTimeout(async () => {
+          // config changed, rebuild the project
+          console.log(chalk.gray('Detected changes to fragy configuration, rebuilding project...'));
+          await buildSite(app);
+          // send refresh
+          serverEvents.emit('refresh');
+          console.log(
+            `${chalk.green(' Project has been rebuilt successfully.\n')}${serverMessage(port)}`,
+          );
+        }, 500);
       });
       // output messages
       console.log(`\u001Bc${serverMessage(port)}`);

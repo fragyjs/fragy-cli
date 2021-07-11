@@ -8,7 +8,7 @@ import open from 'open';
 import fsp from 'fs/promises';
 import fs from 'fs';
 import { Application } from '../app';
-import createServer from '../utils/localServer';
+import startServer from '../utils/localServer';
 import { copyDirectory } from '../utils/fs';
 
 const buildSite = (app: Application) => {
@@ -55,9 +55,13 @@ const mount = (app: Application, program: commander.Command): void => {
         app.logger.debug('Starting to build the site...');
         buildSite(app);
       }
-      // init server
-      const server = createServer(distPath);
-      // watch files
+      // start server
+      const port = await portfinder.getPortPromise({
+        port: 8080,
+        stopPort: 8090,
+      });
+      const { events: serverEvents } = startServer(distPath, port);
+      // watch posts
       const postsDirPath = path.resolve(app.workDir, './.fragy/posts');
       if (!fs.existsSync(postsDirPath)) {
         await fsp.mkdir(postsDirPath, { recursive: true });
@@ -118,26 +122,23 @@ const mount = (app: Application, program: commander.Command): void => {
           } catch (e) {
             copyFailedError = e;
           }
+          // send refresh through websocket
+          serverEvents.emit('refresh');
+          console.log('\u001Bc');
           // output message to console
-          console.clear();
           if (copyFailedError) {
             app.logger.error('Failed to generate feeds.', copyFailedError, '\n\n');
           }
           console.log(
             `${
-              !copyFailedError && chalk.green('\n New feeds were generated successfully.\n')
+              !copyFailedError && chalk.green(' New feeds were generated successfully.\n')
             }${serverMessage(port)}`,
           );
         }, 100);
       });
-      // start server
-      const port = await portfinder.getPortPromise({
-        port: 8080,
-        stopPort: 8090,
-      });
-      server.listen(port);
-      console.clear();
-      console.log(serverMessage(port));
+      // output messages
+      console.log(`\u001Bc${serverMessage(port)}`);
+      // open page in browser
       await open(`http://localhost:${port}`);
     });
 };

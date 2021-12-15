@@ -132,7 +132,7 @@ const mount = (app: Application, program: commander.Command): void => {
               try {
                 await repo.package();
               } catch (err) {
-                if (err.message === 'Not Found') {
+                if ((err as any).message === 'Not Found') {
                   return 'Failed to find this package from npm, please check your input.';
                 }
                 return 'Failed to fetch the package info from npm, please retry again.';

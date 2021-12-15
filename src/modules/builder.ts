@@ -8,10 +8,15 @@ import open from 'open';
 import fsp from 'fs/promises';
 import fs from 'fs';
 import { Application } from '../app';
-import startServer from '../utils/localServer';
 import { copyDirectory } from '../utils/fs';
+import { execAsync } from '../utils/exec';
+import startServer from '../utils/localServer';
 
-const buildSite = (app: Application) => {
+interface ServeCommandOpts {
+  port?: string;
+}
+
+const buildSite = async (app: Application, promise = false) => {
   const userConfigPath = path.resolve(app.workDir, './fragy.config.js');
   if (!fs.existsSync(userConfigPath)) {
     app.logger.error('Cannot find fragy.config.js under current directory.');
@@ -22,13 +27,57 @@ const buildSite = (app: Application) => {
     app.logger.error('Cannot find fragy in node_modules, please check your project.');
   }
   // run build command
-  childProcess.execSync('npm run build', { stdio: 'inherit', cwd: moduleDirPath });
+  promise
+    ? await execAsync('npm run build', { cwd: moduleDirPath })
+    : childProcess.execSync('npm run build', { stdio: 'inherit', cwd: moduleDirPath });
+};
+
+const generateFeeds = async (app: Application, promise = false) => {
+  const moduleDirPath = path.resolve(app.workDir, './node_modules/fragy');
+  promise
+    ? await execAsync('npm run build', { cwd: moduleDirPath })
+    : childProcess.execSync('npm run generate', {
+        cwd: moduleDirPath,
+      });
+};
+
+const copyGeneratedFiles = async (app: Application) => {
+  const copyPromises: Array<Promise<void>> = [];
+  if (fs.existsSync('./.fragy/listFeed.json')) {
+    // not splitted
+    copyPromises.push(
+      fsp.copyFile(
+        path.resolve(app.workDir, './.fragy/listFeed.json'),
+        path.resolve(app.workDir, './dist/data/listFeed.json'),
+      ),
+    );
+  } else {
+    copyPromises.push(
+      copyDirectory({
+        source: path.resolve(app.workDir, './.fragy/listFeed'),
+        dest: path.resolve(app.workDir, './dist/data/listFeed'),
+        recursive: true,
+        force: true,
+      }),
+    );
+  }
+  copyPromises.push(
+    copyDirectory({
+      source: path.resolve(app.workDir, './.fragy/posts'),
+      dest: path.resolve(app.workDir, './dist/data/posts'),
+      recursive: true,
+      flatten: true,
+      force: true,
+      pattern: /\.md$/,
+    }),
+  );
+  await Promise.all(copyPromises);
 };
 
 const serverMessage = (port: number) => {
   return `\n ${chalk.green('Fragy local preview server running at:')}\n\n   ${chalk.blue(
     `- http://localhost:${port}`,
-  )}\n\n ${chalk.yellow('Note this server is only for preview.')}\n\n`;
+  )}\n\n ${chalk.yellow('This server is only for preview.')}\n\n`;
 };
 
 const mount = (app: Application, program: commander.Command): void => {
@@ -41,26 +90,27 @@ const mount = (app: Application, program: commander.Command): void => {
   program
     .command('serve')
     .description('Create local server to preview your site')
-    .option('-s, --skip-build', 'Skip building, create server directly')
-    .action(async (options: commander.Command) => {
+    .option('-p <port>, --port', 'Specify the listening port of preview server.')
+    .action(async (options: ServeCommandOpts) => {
       const distPath = path.resolve(app.workDir, './dist');
-      if (!fs.existsSync(distPath) || !options.skipBuild) {
-        // remove existed dist files first
-        if (fs.existsSync(distPath)) {
-          const stat = await fsp.stat(distPath);
-          if (stat.isDirectory()) {
-            await fsp.rm(distPath, { recursive: true, force: true });
-          }
-        }
-        app.logger.debug('Starting to build the site...');
-        buildSite(app);
+
+      console.log(chalk.cyan('Building the static files from Fragy sources...'));
+
+      try {
+        await Promise.all([buildSite(app, true), generateFeeds(app, true)]);
+        await copyGeneratedFiles(app);
+      } catch {
+        console.log(chalk.red('Cannot finish the initial build.'));
       }
+
       // start server
+      const userPort = options.port ? Number(options.port) : 8080;
       const port = await portfinder.getPortPromise({
-        port: 8080,
-        stopPort: 8090,
+        port: userPort,
+        stopPort: userPort + 10,
       });
       const { events: serverEvents } = startServer(distPath, port);
+
       // watch posts
       const postsDirPath = path.resolve(app.workDir, './.fragy/posts');
       if (!fs.existsSync(postsDirPath)) {
@@ -70,7 +120,7 @@ const mount = (app: Application, program: commander.Command): void => {
         recursive: true,
         encoding: 'utf-8',
       });
-      const moduleDirPath = path.resolve(app.workDir, './node_modules/fragy');
+
       let changeTimeout: NodeJS.Timeout | null;
       watcher.on('change', async () => {
         if (changeTimeout) {
@@ -82,43 +132,15 @@ const mount = (app: Application, program: commander.Command): void => {
           // eslint-disable-next-line no-console
           console.log(chalk.gray('Detected changes to articles, regenerating feeds...'));
           try {
-            childProcess.execSync('npm run generate', {
-              cwd: moduleDirPath,
-            });
-          } catch (err) {
-            console.error('Failed to generate feeds.', err);
+            generateFeeds(app);
+          } catch {
+            console.log(chalk.red('Failed to generate feeds.'));
+            return;
           }
           // after generate
-          const copyPromises: Array<Promise<void>> = [];
-          if (fs.existsSync('./.fragy/listFeed.json')) {
-            // not splitted
-            copyPromises.push(
-              fsp.copyFile(
-                path.resolve(app.workDir, './.fragy/listFeed.json'),
-                path.resolve(app.workDir, './dist/data/listFeed.json'),
-              ),
-            );
-          } else {
-            copyPromises.push(
-              copyDirectory({
-                source: path.resolve(app.workDir, './.fragy/listFeed'),
-                dest: path.resolve(app.workDir, './dist/data/listFeed'),
-                recursive: true,
-              }),
-            );
-          }
-          copyPromises.push(
-            copyDirectory({
-              source: path.resolve(app.workDir, './.fragy/posts'),
-              dest: path.resolve(app.workDir, './dist/posts'),
-              recursive: true,
-              flatten: true,
-              pattern: /\.md$/,
-            }),
-          );
           let copyFailedError;
           try {
-            await Promise.all(copyPromises);
+            await copyGeneratedFiles(app);
           } catch (e) {
             copyFailedError = e;
           }
@@ -134,8 +156,9 @@ const mount = (app: Application, program: commander.Command): void => {
               !copyFailedError && chalk.green(' New feeds were generated successfully.\n')
             }${serverMessage(port)}`,
           );
-        }, 500);
+        }, 300);
       });
+
       // watch config file
       const configPath = path.resolve(app.workDir, './fragy.config.js');
       const configWatcher = fs.watch(configPath, { encoding: 'utf-8' });

@@ -44,12 +44,19 @@ const startServer = (dir: string, port: number) => {
   app.use(async (ctx) => {
     let filePath: string;
     if (/\.(js|json|css|ico|html)$/.test(ctx.path) || /\/data\/.+\.md$/.test(ctx.path)) {
-      filePath = path.resolve(dir, `.${ctx.path}`);
-      ctx.body = fs.createReadStream(filePath);
+      const fileName = path.resolve(
+        dir,
+        ctx.path.startsWith('/') ? ctx.path.substring(1) : ctx.path,
+      );
+      filePath = path.resolve(dir, decodeURIComponent(fileName));
+      ctx.set('Cache-Control', 'no-store');
+      // eslint-disable-next-line require-atomic-updates
+      ctx.body = fs.readFileSync(filePath, {
+        encoding: 'utf-8',
+      });
     } else {
-      ctx.set('Content-Type', 'text/html');
       filePath = path.resolve(dir, './index.html');
-      const fileContent = await fsp.readFile(filePath, { encoding: 'utf-8' });
+      const fileContent = await fsp.readFile(filePath, { encoding: 'utf-8', flag: 'rs+' });
       const injectedContent = fileContent.replace(
         '</head>',
         `${wsInjectionTemplate.replace('<port>', port.toString())}\n</head>`.trim(),
@@ -57,14 +64,10 @@ const startServer = (dir: string, port: number) => {
       // eslint-disable-next-line require-atomic-updates
       ctx.body = injectedContent;
     }
-    const ext = path.extname(filePath);
-    if (ext) {
-      const contentType = mime.getType(ext.substr(1));
-      if (contentType) {
-        ctx.set('Content-Type', contentType);
-      } else {
-        ctx.set('Content-Type', 'text/plain');
-      }
+    const ext = path.extname(filePath)?.substring(1);
+    if (ext && ext !== 'md') {
+      const contentType = mime.getType(ext);
+      ctx.set('Content-Type', contentType || 'text/plain');
     } else {
       ctx.set('Content-Type', 'text/plain');
     }

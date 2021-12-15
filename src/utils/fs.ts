@@ -8,6 +8,7 @@ interface CopyDirOptions {
   recursive?: boolean;
   baseDest?: string;
   flatten?: boolean;
+  force?: boolean;
   pattern?: RegExp;
 }
 
@@ -17,6 +18,7 @@ export const copyDirectory = async ({
   baseDest = dest,
   recursive = false,
   flatten = false,
+  force = false,
   pattern,
 }: CopyDirOptions) => {
   const filenames = await fsp.readdir(source);
@@ -39,6 +41,7 @@ export const copyDirectory = async ({
           dest: destTargetPath,
           recursive,
           flatten,
+          force,
           baseDest,
         });
       } else {
@@ -51,6 +54,9 @@ export const copyDirectory = async ({
         const baseDirPath = path.dirname(destFilePath);
         if (!fs.existsSync(baseDirPath)) {
           await fsp.mkdir(baseDirPath);
+        }
+        if (force && fs.existsSync(destFilePath)) {
+          await fsp.unlink(destFilePath);
         }
         await fsp.copyFile(sourceTargetPath, destFilePath);
       }

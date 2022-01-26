@@ -35,7 +35,7 @@ const buildSite = async (app: Application, promise = false) => {
 const generateFeeds = async (app: Application, promise = false) => {
   const moduleDirPath = path.resolve(app.workDir, './node_modules/fragy');
   promise
-    ? await execAsync('npm run build', { cwd: moduleDirPath })
+    ? await execAsync('npm run generate', { cwd: moduleDirPath })
     : childProcess.execSync('npm run generate', {
         cwd: moduleDirPath,
       });
@@ -85,13 +85,37 @@ const mount = (app: Application, program: commander.Command): void => {
     .command('build')
     .description('Build the fragy site')
     .action(() => {
-      buildSite(app);
+      console.log(chalk.cyan('Building the static files from Fragy sources...'));
+      try {
+        buildSite(app);
+        console.log(chalk.green('New site files were built successfully.'));
+      } catch (err) {
+        console.log(chalk.red('Failed to build site files.'));
+        console.error(chalk.red(err));
+      }
     });
   program
     .command('generate')
     .description('Generate latest feeds')
-    .action(() => {
-      generateFeeds(app);
+    .action(async () => {
+      console.log(chalk.cyan('Generating latest feeds...'));
+      try {
+        await generateFeeds(app, true);
+        const targetDir = path.resolve(app.workDir, './dist/data/listFeed');
+        if (!fs.existsSync(targetDir)) {
+          await fsp.mkdir(targetDir, { recursive: true });
+        }
+        await copyDirectory({
+          source: path.resolve(app.workDir, './.fragy/listFeed'),
+          dest: targetDir,
+          recursive: true,
+          force: true,
+        });
+        console.log(chalk.green('New feeds were generated successfully.'));
+      } catch (err) {
+        console.log(chalk.red('Failed to build latest feeds.'));
+        console.error(chalk.red(err));
+      }
     });
   program
     .command('serve')

@@ -88,6 +88,12 @@ const mount = (app: Application, program: commander.Command): void => {
       buildSite(app);
     });
   program
+    .command('generate')
+    .description('Generate latest feeds')
+    .action(() => {
+      generateFeeds(app);
+    });
+  program
     .command('serve')
     .description('Create local server to preview your site')
     .option('-p <port>, --port', 'Specify the listening port of preview server.')

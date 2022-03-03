@@ -151,7 +151,7 @@ const mount = (app: Application, program: commander.Command): void => {
         encoding: 'utf-8',
       });
 
-      let changeTimeout: NodeJS.Timeout | null;
+      let changeTimeout: ReturnType<typeof setTimeout> | null;
       watcher.on('change', async () => {
         if (changeTimeout) {
           clearTimeout(changeTimeout);
@@ -192,7 +192,7 @@ const mount = (app: Application, program: commander.Command): void => {
       // watch config file
       const configPath = path.resolve(app.workDir, './fragy.config.js');
       const configWatcher = fs.watch(configPath, { encoding: 'utf-8' });
-      let configChangeTimeout: NodeJS.Timeout | null;
+      let configChangeTimeout: ReturnType<typeof setTimeout> | null;
       configWatcher.on('change', async () => {
         if (configChangeTimeout) {
           clearTimeout(configChangeTimeout);

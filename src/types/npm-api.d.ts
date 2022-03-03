@@ -3,64 +3,56 @@ declare module 'npm-api' {
   import * as through from 'through';
   import * as url from 'url';
 
-  // TODO: Should we use types from existing package like `package-json`?
-  // `npm-api` currently assumes that the response from the registry is a
-  // `package.json`-like object, but does not enforce this.
   type PackageJson = unknown;
   type PackageJsonDependencies = unknown;
 
   class List {
-    constructor(name: string, view: View);
+    public constructor(name: string, view: View);
 
-    query(params?: url.URLFormatOptions): Promise<request.Response>;
-    url(query?: url.URLFormatOptions): string;
+    public query(params?: url.URLFormatOptions): Promise<request.Response>;
+    public url(query?: url.URLFormatOptions): string;
   }
 
   class View {
-    constructor(name: string);
+    public constructor(name: string);
 
-    query(params?: url.URLFormatOptions): Promise<Array<Buffer | string>>;
-    stream(params?: url.URLFormatOptions): through.ThroughStream;
-    url(query?: url.URLFormatOptions): string;
+    public query(params?: url.URLFormatOptions): Promise<Array<Buffer | string>>;
+    public stream(params?: url.URLFormatOptions): through.ThroughStream;
+    public url(query?: url.URLFormatOptions): string;
   }
 
   class Repo {
-    constructor(name: string);
+    public constructor(name: string);
 
-    package(version?: string): Promise<PackageJson>;
-    version(version: string): Promise<PackageJson>;
-    dependencies(version: string): PackageJsonDependencies;
-    devDependencies(version: string): PackageJsonDependencies;
-    prop(prop: string, version?: string): unknown;
+    public package(version?: string): Promise<PackageJson>;
+    public version(version: string): Promise<PackageJson>;
+    public dependencies(version: string): PackageJsonDependencies;
+    public devDependencies(version: string): PackageJsonDependencies;
+    public prop(prop: string, version?: string): unknown;
   }
 
   class Maintainer {
-    constructor(name: string);
+    public constructor(name: string);
 
-    repos(): Promise<string[]>;
+    public repos(): Promise<string[]>;
   }
 
   class NpmApi {
-    List: typeof List;
-    View: typeof View;
-    Repo: typeof Repo;
-    Maintainer: typeof Maintainer;
+    public List: typeof List;
+    public View: typeof View;
+    public Repo: typeof Repo;
+    public Maintainer: typeof Maintainer;
 
-    // TODO: What is the type of options? As far as I can tell, it's only used when
     // calling the function returned from lib/plugins/downloads, which has 0 arguments.
-    constructor(options?: unknown);
+    public constructor(options?: unknown);
 
-    // TODO: Confirm with package author that `reset` and `use` are not intended for public consumption.
-    // reset(): void
-    // use(fn: unknown): void
+    public view(name: string): View;
 
-    view(name: string): View;
+    public list(name: string, view: string | View): List;
 
-    list(name: string, view: string | View): List;
+    public repo(name: string): Repo;
 
-    repo(name: string): Repo;
-
-    maintainer(name: string): Maintainer;
+    public maintainer(name: string): Maintainer;
   }
 
   export = NpmApi;

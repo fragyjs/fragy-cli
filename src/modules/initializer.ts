@@ -113,6 +113,10 @@ const mount = (app: Application, program: commander.Command): void => {
               value: '@fragy/purity',
             },
             {
+              name: 'OneSlot',
+              value: '@fragy/oneslot',
+            },
+            {
               name: 'Custom',
               value: 'custom',
             },
@@ -127,7 +131,7 @@ const mount = (app: Application, program: commander.Command): void => {
             name: 'pkg',
             message: 'Package name of the custom theme:',
             validate: async (themePkg) => {
-              app.logger.debug('Fetching package info from npm...');
+              app.logger.debug('\nFetching package info from npm...');
               const repo = npm.repo(themePkg);
               try {
                 await repo.package();
@@ -137,6 +141,7 @@ const mount = (app: Application, program: commander.Command): void => {
                 }
                 return 'Failed to fetch the package info from npm, please retry again.';
               }
+              return true;
             },
           },
         ]);

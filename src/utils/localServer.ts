@@ -42,7 +42,8 @@ const startServer = (dir: string, port: number) => {
 
   // apply middleware
   app.use(async (ctx) => {
-    let filePath: string;
+    let filePath = '';
+    // for static files
     if (/\.(js|json|css|ico|html)$/.test(ctx.path) || /\/data\/.+\.md$/.test(ctx.path)) {
       const fileName = path.resolve(
         dir,
@@ -54,7 +55,8 @@ const startServer = (dir: string, port: number) => {
       ctx.body = fs.readFileSync(filePath, {
         encoding: 'utf-8',
       });
-    } else {
+    } else if (ctx.path.endsWith('/')) {
+      // rewrite to index.html
       filePath = path.resolve(dir, './index.html');
       const fileContent = await fsp.readFile(filePath, { encoding: 'utf-8', flag: 'rs+' });
       const injectedContent = fileContent.replace(
@@ -63,6 +65,17 @@ const startServer = (dir: string, port: number) => {
       );
       // eslint-disable-next-line require-atomic-updates
       ctx.body = injectedContent;
+    } else {
+      // regard as static files
+      const fileName = path.resolve(
+        dir,
+        ctx.path.startsWith('/') ? ctx.path.substring(1) : ctx.path,
+      );
+      ctx.body = fs.createReadStream(fileName);
+      filePath = path.resolve(dir, decodeURIComponent(fileName));
+    }
+    if (!filePath) {
+      ctx.throw(404);
     }
     const ext = path.extname(filePath)?.substring(1);
     if (ext && ext !== 'md') {

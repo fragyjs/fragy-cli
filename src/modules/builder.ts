@@ -77,7 +77,7 @@ const copyGeneratedFiles = async (app: Application) => {
 const serverMessage = (port: number) => {
   return `\n ${chalk.green('Fragy local preview server running at:')}\n\n   ${chalk.blue(
     `- http://localhost:${port}`,
-  )}\n\n ${chalk.yellow('This server is only for preview.')}\n\n`;
+  )}\n\n ${chalk.yellow('This server is only for preview, do not it for production.')}\n\n`;
 };
 
 const mount = (app: Application, program: commander.Command): void => {
@@ -85,7 +85,7 @@ const mount = (app: Application, program: commander.Command): void => {
     .command('build')
     .description('Build the fragy site')
     .action(() => {
-      console.log(chalk.cyan('Building the static files from Fragy sources...'));
+      console.log(chalk.cyan('Building the static files from source files...'));
       try {
         buildSite(app);
         console.log(chalk.green('New site files were built successfully.'));
@@ -124,13 +124,14 @@ const mount = (app: Application, program: commander.Command): void => {
     .action(async (options: ServeCommandOpts) => {
       const distPath = path.resolve(app.workDir, './dist');
 
-      console.log(chalk.cyan('Building the static files from Fragy sources...'));
+      console.log(chalk.cyan('Building the static files from source files...'));
 
       try {
         await Promise.all([buildSite(app, true), generateFeeds(app, true)]);
         await copyGeneratedFiles(app);
-      } catch {
-        console.log(chalk.red('Cannot finish the initial build.'));
+      } catch (err) {
+        console.log(chalk.red('Failed to build necessary static files.'));
+        return;
       }
 
       // start server

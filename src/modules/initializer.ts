@@ -33,7 +33,9 @@ const mount = (app: Application, program: commander.Command): void => {
     .command('init')
     .description('Initialize a fragy project')
     .action(async () => {
-      app.logger.info('Firstly, we need some necessary information for initializing your project.');
+      app.logger.info(
+        'Firstly, we need some necessary information to initialize a brand new fragy site.',
+      );
       const userConfig: FragyInitUserConfig = await inquirer.prompt([
         {
           type: 'input',
@@ -263,7 +265,7 @@ const mount = (app: Application, program: commander.Command): void => {
         )} to start a local server.\nIf you want to build your project, use ${chalk.yellow(
           'fragy build',
         )}.\n\n${chalk.grey(
-          `Thank you for using Fragy, if you like this project.\nIt's welcome to give us a star at GitHub. ❤`,
+          `Thank you for using Fragy, if you like this project.\nIt's welcome to give us a star at GitHub. ❤\nhttps://github.com/fragyjs/fragy`,
         )}`,
       );
     });

@@ -44,7 +44,7 @@ const startServer = (dir: string, port: number) => {
   app.use(async (ctx) => {
     let filePath = '';
     // for static files
-    if (/\.(js|json|css|ico|html)$/.test(ctx.path) || /\/data\/.+\.md$/.test(ctx.path)) {
+    if (/\.(js|json|css|txt|xml|yaml|html)$/.test(ctx.path) || /\/data\/.+\.md$/.test(ctx.path)) {
       const fileName = path.resolve(
         dir,
         ctx.path.startsWith('/') ? ctx.path.substring(1) : ctx.path,

@@ -14,7 +14,7 @@ const mount = async (app: Application, program: commander.Command) => {
   cmd
     .command('post')
     .description('Create a post')
-    .option('-n', '--no-open', 'Do not open the file after creating')
+    .option('-s', '--slient', 'Do not open the file after creating')
     .action(async (options) => {
       const storedMainProjectPath = app.storage.get('main_project_path');
       const currentPostPath = path.resolve(app.workDir, './.fragy/posts');

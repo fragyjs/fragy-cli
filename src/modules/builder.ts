@@ -43,24 +43,39 @@ const generateFeeds = async (app: Application, promise = false) => {
 
 const copyGeneratedFiles = async (app: Application) => {
   const copyPromises: Array<Promise<void>> = [];
-  if (fs.existsSync('./.fragy/listFeed.json')) {
-    // not splitted
-    copyPromises.push(
-      fsp.copyFile(
-        path.resolve(app.workDir, './.fragy/listFeed.json'),
-        path.resolve(app.workDir, './dist/data/listFeed.json'),
-      ),
-    );
-  } else {
-    copyPromises.push(
-      copyDirectory({
-        source: path.resolve(app.workDir, './.fragy/listFeed'),
-        dest: path.resolve(app.workDir, './dist/data/listFeed'),
-        recursive: true,
-        force: true,
-      }),
-    );
-  }
+
+  copyPromises.push(
+    ...['listFeed', 'categoryFeed', 'tagFeed'].map((feedName) => {
+      const feedFilePath = path.resolve(app.workDir, `./.fragy/${feedName}.json`);
+      const feedFolderPath = path.resolve(app.workDir, `./.fragy/${feedName}`);
+      if (fs.existsSync(feedFilePath)) {
+        // not splitted
+        return fsp.copyFile(
+          feedFilePath,
+          path.resolve(app.workDir, `./dist/data/${feedName}.json`),
+        );
+      } else if (fs.existsSync(feedFolderPath)) {
+        return copyDirectory({
+          source: feedFolderPath,
+          dest: path.resolve(app.workDir, `./dist/data/${feedName}`),
+          recursive: true,
+          force: true,
+        });
+      } else {
+        return Promise.resolve();
+      }
+    }),
+  );
+  // copy manifest things
+  copyPromises.push(
+    copyDirectory({
+      source: path.resolve(app.workDir, './.fragy/manifest'),
+      dest: path.resolve(app.workDir, `./dist/data/manifest`),
+      recursive: true,
+      force: true,
+    }),
+  );
+  // copy posts
   copyPromises.push(
     copyDirectory({
       source: path.resolve(app.workDir, './.fragy/posts'),
@@ -163,7 +178,7 @@ const mount = (app: Application, program: commander.Command): void => {
           // eslint-disable-next-line no-console
           console.log(chalk.gray('Detected changes to articles, regenerating feeds...'));
           try {
-            generateFeeds(app);
+            await generateFeeds(app);
           } catch {
             console.log(chalk.red('Failed to generate feeds.'));
             return;

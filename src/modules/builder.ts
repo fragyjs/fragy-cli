@@ -14,7 +14,7 @@ import { setLastBuildHash, shouldSkipBuild } from '../utils/build';
 import startServer from '../utils/localServer';
 
 interface BuildCommandOpts {
-  noCache: boolean;
+  cache: boolean;
 }
 
 interface ServeCommandOpts {
@@ -132,13 +132,13 @@ const mount = (app: Application, program: commander.Command): void => {
   program
     .command('build')
     .description('Build the fragy site')
-    .option('--no-cache', 'Skip build cache', false)
+    .option('-C, --no-cache', 'Skip build cache')
     .action(async (options: BuildCommandOpts) => {
       console.log(chalk.cyan('Building the static files from source files...'));
       try {
         const buildRes = await buildSite(app, {
           promise: false,
-          cache: options.noCache !== true,
+          cache: options.cache !== false,
         });
         if (buildRes?.skipped) {
           console.log(chalk.cyan('Generating feeds and manifest files...'));

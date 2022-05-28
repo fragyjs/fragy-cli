@@ -25,7 +25,9 @@ const buildSite = async (app: Application, { promise = false, cache = true } = {
   const userConfigPath = path.resolve(app.workDir, './fragy.config.js');
   if (!fs.existsSync(userConfigPath)) {
     app.logger.error('Cannot find fragy.config.js under current directory.');
-    return;
+    return {
+      error: true,
+    };
   }
   const moduleDirPath = path.resolve(app.workDir, './node_modules/fragy');
   if (!fs.existsSync(moduleDirPath)) {
@@ -36,18 +38,28 @@ const buildSite = async (app: Application, { promise = false, cache = true } = {
     const shouldSkip = await shouldSkipBuild(app);
     if (shouldSkip) {
       app.logger.debug('Static files do not need to be updated, skip the build step.');
-      return;
+      return {
+        skipped: true,
+      };
     }
   }
   // run build command
-  promise
-    ? await execAsync('npm run build', { cwd: moduleDirPath })
-    : childProcess.execSync('npm run build', { stdio: 'inherit', cwd: moduleDirPath });
+  try {
+    promise
+      ? await execAsync('npm run build', { cwd: moduleDirPath })
+      : childProcess.execSync('npm run build', { stdio: 'inherit', cwd: moduleDirPath });
+  } catch (err) {
+    app.logger.error('Failed to build Fragy basic files.', err);
+    return;
+  }
   // set cache
   if (cache) {
     // update cache
     setLastBuildHash(app);
   }
+  return {
+    skipped: false,
+  };
 };
 
 const generateFeeds = async (app: Application, promise = false) => {
@@ -72,6 +84,10 @@ const copyGeneratedFiles = async (app: Application) => {
           path.resolve(app.workDir, `./dist/data/${feedName}.json`),
         );
       } else if (fs.existsSync(feedFolderPath)) {
+        const targetPath = path.resolve(app.workDir, `./dist/data/${feedName}`);
+        if (!fs.existsSync(targetPath)) {
+          fs.mkdirSync(targetPath);
+        }
         return copyDirectory({
           source: feedFolderPath,
           dest: path.resolve(app.workDir, `./dist/data/${feedName}`),
@@ -117,13 +133,19 @@ const mount = (app: Application, program: commander.Command): void => {
     .command('build')
     .description('Build the fragy site')
     .option('--no-cache', 'Skip build cache', false)
-    .action((options: BuildCommandOpts) => {
+    .action(async (options: BuildCommandOpts) => {
       console.log(chalk.cyan('Building the static files from source files...'));
       try {
-        buildSite(app, {
+        const buildRes = await buildSite(app, {
           promise: false,
           cache: options.noCache !== true,
         });
+        if (buildRes?.skipped) {
+          console.log(chalk.cyan('Generating feeds and manifest files...'));
+          await generateFeeds(app, true);
+          console.log(chalk.cyan('Moving the generated files...'));
+          await copyGeneratedFiles(app);
+        }
         console.log(chalk.green('New site files were built successfully.'));
       } catch (err) {
         console.log(chalk.red('Failed to build site files.'));
@@ -137,16 +159,7 @@ const mount = (app: Application, program: commander.Command): void => {
       console.log(chalk.cyan('Generating latest feeds...'));
       try {
         await generateFeeds(app, true);
-        const targetDir = path.resolve(app.workDir, './dist/data/listFeed');
-        if (!fs.existsSync(targetDir)) {
-          await fsp.mkdir(targetDir, { recursive: true });
-        }
-        await copyDirectory({
-          source: path.resolve(app.workDir, './.fragy/listFeed'),
-          dest: targetDir,
-          recursive: true,
-          force: true,
-        });
+        await copyGeneratedFiles(app);
         console.log(chalk.green('New feeds were generated successfully.'));
       } catch (err) {
         console.log(chalk.red('Failed to build latest feeds.'));

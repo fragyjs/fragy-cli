@@ -1,10 +1,13 @@
 import path from 'path';
 import fs from 'fs';
 import fsp from 'fs/promises';
+import esm from 'esm';
 import { Application } from '../app';
 
 let userConfigCache: any;
 let packageJsonCache: any;
+
+const esmRequire = esm(module);
 
 export const getUserConfig = async (app: Application) => {
   if (userConfigCache) {
@@ -14,7 +17,7 @@ export const getUserConfig = async (app: Application) => {
   if (!fs.existsSync(userConfigPath)) {
     return null;
   }
-  const userConfig = (await import(userConfigPath)).default;
+  const userConfig = esmRequire(userConfigPath).default;
   if (userConfig) {
     userConfigCache = userConfig;
     return userConfig;

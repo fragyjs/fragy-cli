@@ -10,13 +10,18 @@ import fs from 'fs';
 import { Application } from '../app';
 import { copyDirectory } from '../utils/fs';
 import { execAsync } from '../utils/exec';
+import { setLastBuildHash, shouldSkipBuild } from '../utils/build';
 import startServer from '../utils/localServer';
+
+interface BuildCommandOpts {
+  noCache: boolean;
+}
 
 interface ServeCommandOpts {
   port?: string;
 }
 
-const buildSite = async (app: Application, promise = false) => {
+const buildSite = async (app: Application, { promise = false, cache = true } = {}) => {
   const userConfigPath = path.resolve(app.workDir, './fragy.config.js');
   if (!fs.existsSync(userConfigPath)) {
     app.logger.error('Cannot find fragy.config.js under current directory.');
@@ -26,10 +31,23 @@ const buildSite = async (app: Application, promise = false) => {
   if (!fs.existsSync(moduleDirPath)) {
     app.logger.error('Cannot find fragy in node_modules, please check your project.');
   }
+  if (cache) {
+    // if cache enabled, check last build hash.
+    const shouldSkip = await shouldSkipBuild(app);
+    if (shouldSkip) {
+      app.logger.debug('Static files do not need to be updated, skip the build step.');
+      return;
+    }
+  }
   // run build command
   promise
     ? await execAsync('npm run build', { cwd: moduleDirPath })
     : childProcess.execSync('npm run build', { stdio: 'inherit', cwd: moduleDirPath });
+  // set cache
+  if (cache) {
+    // update cache
+    setLastBuildHash(app);
+  }
 };
 
 const generateFeeds = async (app: Application, promise = false) => {
@@ -43,7 +61,6 @@ const generateFeeds = async (app: Application, promise = false) => {
 
 const copyGeneratedFiles = async (app: Application) => {
   const copyPromises: Array<Promise<void>> = [];
-
   copyPromises.push(
     ...['listFeed', 'categoryFeed', 'tagFeed'].map((feedName) => {
       const feedFilePath = path.resolve(app.workDir, `./.fragy/${feedName}.json`);
@@ -99,10 +116,14 @@ const mount = (app: Application, program: commander.Command): void => {
   program
     .command('build')
     .description('Build the fragy site')
-    .action(() => {
+    .option('--no-cache', 'Skip build cache', false)
+    .action((options: BuildCommandOpts) => {
       console.log(chalk.cyan('Building the static files from source files...'));
       try {
-        buildSite(app);
+        buildSite(app, {
+          promise: false,
+          cache: options.noCache !== true,
+        });
         console.log(chalk.green('New site files were built successfully.'));
       } catch (err) {
         console.log(chalk.red('Failed to build site files.'));
@@ -142,7 +163,13 @@ const mount = (app: Application, program: commander.Command): void => {
       console.log(chalk.cyan('Building the static files from source files...'));
 
       try {
-        await Promise.all([buildSite(app, true), generateFeeds(app, true)]);
+        await Promise.all([
+          buildSite(app, {
+            promise: true,
+            cache: false,
+          }),
+          generateFeeds(app, true),
+        ]);
         await copyGeneratedFiles(app);
       } catch (err) {
         console.log(chalk.red('Failed to build necessary static files.'));

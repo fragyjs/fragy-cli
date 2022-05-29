@@ -1,4 +1,7 @@
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import { hashElement } from 'folder-hash';
 import { Application } from '../app';
 import { getPackageJson, getUserConfig } from './project';
 
@@ -13,9 +16,17 @@ const generateBuildHash = async (app: Application) => {
     const fragyVer = packageJson.dependencies.fragy;
     const themeVer = packageJson.dependencies[themePkg];
     const userConfigStr = JSON.stringify(userConfig);
+    const customComponentPath = path.resolve(app.workDir, './.fragy/components');
+    const customComponentHash = fs.existsSync(customComponentPath)
+      ? await hashElement(customComponentPath)
+      : '';
     const shaHash = crypto
       .createHash('sha256')
-      .update(`${userConfigStr}__${fragyVer}__${themeVer}`);
+      .update(
+        `${userConfigStr}__${fragyVer}__${themeVer}__${
+          customComponentHash || 'no-custom-component'
+        }`,
+      );
     return {
       projectName: packageJson.name as string,
       hash: shaHash.digest('base64'),

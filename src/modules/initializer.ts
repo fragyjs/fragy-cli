@@ -34,7 +34,7 @@ const mount = (app: Application, program: commander.Command): void => {
     .description('Initialize a fragy project')
     .action(async () => {
       app.logger.info(
-        'Firstly, we need some necessary information to initialize a brand new fragy site.',
+        'Firstly, you need to provide some necessary information to initialize a brand new fragy site.',
       );
       const userConfig: FragyInitUserConfig = await inquirer.prompt([
         {

@@ -119,6 +119,10 @@ const mount = (app: Application, program: commander.Command): void => {
               value: '@fragy/oneslot',
             },
             {
+              name: 'Orion',
+              value: '@fragy/orion',
+            },
+            {
               name: 'Custom',
               value: 'custom',
             },
@@ -164,7 +168,7 @@ const mount = (app: Application, program: commander.Command): void => {
       // install fragy
       app.logger.debug('Installing fragy...');
       try {
-        childProcess.execSync(`npm install fragy --save`, { stdio: 'inherit' });
+        childProcess.execSync(`npm install fragy@latest --save-dev`, { stdio: 'inherit' });
       } catch (err) {
         app.logger.error('Failed to install fragy.');
         return;
@@ -172,7 +176,9 @@ const mount = (app: Application, program: commander.Command): void => {
       // install theme
       app.logger.debug(`Installing theme [${userConfig.theme}] for fragy...`);
       try {
-        childProcess.execSync(`npm install ${userConfig.theme} --save`, { stdio: 'inherit' });
+        childProcess.execSync(`npm install ${userConfig.theme}@latest --save-dev`, {
+          stdio: 'inherit',
+        });
       } catch (err) {
         app.logger.error('Failed to install theme package.');
         return;

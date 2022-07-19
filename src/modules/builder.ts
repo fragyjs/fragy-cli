@@ -178,13 +178,11 @@ const mount = (app: Application, program: commander.Command): void => {
       console.log(chalk.cyan('Building necessary static resources from source files...'));
 
       try {
-        await Promise.all([
-          generateFeeds(app, true),
-          buildSite(app, {
-            promise: true,
-            cache: false,
-          }),
-        ]);
+        await generateFeeds(app, true);
+        await buildSite(app, {
+          promise: true,
+          cache: false,
+        });
         await copyGeneratedFiles(app);
       } catch (err) {
         return process.exit(-1);

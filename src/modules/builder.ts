@@ -123,7 +123,7 @@ const copyGeneratedFiles = async (app: Application) => {
 };
 
 const serverMessage = (port: number) => {
-  return `\n ${chalk.green('Fragy local preview server running at:')}\n\n   ${chalk.blue(
+  return `\n ${chalk.green('Fragy local preview server running at:')}\n\n   ${chalk.cyan(
     `- http://localhost:${port}`,
   )}\n\n ${chalk.yellow('This server is only for preview, do not it for production.')}\n\n`;
 };
@@ -134,21 +134,23 @@ const mount = (app: Application, program: commander.Command): void => {
     .description('Build the fragy site')
     .option('-C, --no-cache', 'Skip build cache')
     .action(async (options: BuildCommandOpts) => {
-      console.log(chalk.cyan('Building the static files from source files...'));
+      console.log(chalk.cyan('Building the necessary static resources from source files...'));
       try {
+        // generate feeds before building
+        console.log(chalk.cyan('Generating feeds and manifest files...'));
+        await generateFeeds(app, true);
+        // build site with @vue/cli
         const buildRes = await buildSite(app, {
           promise: false,
           cache: options.cache !== false,
         });
         if (buildRes?.skipped) {
-          console.log(chalk.cyan('Generating feeds and manifest files...'));
-          await generateFeeds(app, true);
           console.log(chalk.cyan('Moving the generated files...'));
           await copyGeneratedFiles(app);
         }
         console.log(chalk.green('New site files were built successfully.'));
       } catch (err) {
-        console.log(chalk.red('Failed to build site files.'));
+        console.log(chalk.red('Failed to build Fragy static files.'));
         console.error(chalk.red(err));
       }
     });
@@ -173,20 +175,19 @@ const mount = (app: Application, program: commander.Command): void => {
     .action(async (options: ServeCommandOpts) => {
       const distPath = path.resolve(app.workDir, './dist');
 
-      console.log(chalk.cyan('Building the static files from source files...'));
+      console.log(chalk.cyan('Building necessary static resources from source files...'));
 
       try {
         await Promise.all([
+          generateFeeds(app, true),
           buildSite(app, {
             promise: true,
             cache: false,
           }),
-          generateFeeds(app, true),
         ]);
         await copyGeneratedFiles(app);
       } catch (err) {
-        console.log(chalk.red('Failed to build necessary static files.'));
-        return;
+        return process.exit(-1);
       }
 
       // start server

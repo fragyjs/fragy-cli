@@ -26,6 +26,8 @@ interface FragyInitUserConfig {
   theme: string;
 }
 
+const NPM_REGISTRY = 'https://registry.npmjs.org';
+
 const npm = new NpmApi();
 
 const mount = (app: Application, program: commander.Command): void => {
@@ -166,21 +168,16 @@ const mount = (app: Application, program: commander.Command): void => {
         { encoding: 'utf-8' },
       );
       // install fragy
-      app.logger.debug('Installing fragy...');
+      app.logger.debug('Installing Fragy and theme...');
       try {
-        childProcess.execSync(`npm install fragy@latest --save-dev`, { stdio: 'inherit' });
+        childProcess.execSync(
+          `npm install fragy@latest ${userConfig.theme}@latest -S --legacy-peer-deps --registry="${NPM_REGISTRY}"`,
+          {
+            stdio: 'inherit',
+          },
+        );
       } catch (err) {
-        app.logger.error('Failed to install fragy.');
-        return;
-      }
-      // install theme
-      app.logger.debug(`Installing theme [${userConfig.theme}] for fragy...`);
-      try {
-        childProcess.execSync(`npm install ${userConfig.theme}@latest --save-dev`, {
-          stdio: 'inherit',
-        });
-      } catch (err) {
-        app.logger.error('Failed to install theme package.');
+        app.logger.error('Failed to install Fragy packages.');
         return;
       }
       // write config
@@ -271,7 +268,7 @@ const mount = (app: Application, program: commander.Command): void => {
         )} to start a local server.\nIf you want to build your project, use ${chalk.yellow(
           'fragy build',
         )}.\n\n${chalk.grey(
-          `Thank you for using Fragy, if you like this project.\nIt's welcome to give us a star at GitHub. ❤\nhttps://github.com/fragyjs/fragy`,
+          `Thank you for using Fragy, if you like this project.\nIt's welcome to give us a star at GitHub. ❤\n\nOur repository: https://github.com/fragyjs/fragy\n`,
         )}`,
       );
     });

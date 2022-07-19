@@ -183,7 +183,6 @@ const mount = (app: Application, program: commander.Command): void => {
           promise: true,
           cache: false,
         });
-        await copyGeneratedFiles(app);
       } catch (err) {
         return process.exit(-1);
       }

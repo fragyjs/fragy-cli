@@ -1,5 +1,5 @@
 import childProcess from 'child_process';
-import logger from './logger';
+import chalk from 'chalk';
 
 const errorKeywords = ['error: '];
 
@@ -12,7 +12,7 @@ export const execAsync = (cmd: string, options?: childProcess.ExecOptions): Prom
         return res || data.toLowerCase().includes(curr);
       }, false);
       if (containsError) {
-        logger.error(data);
+        process.stderr.write(chalk.red(data));
       }
     });
     child.stderr?.on('data', (data) => {
@@ -21,7 +21,7 @@ export const execAsync = (cmd: string, options?: childProcess.ExecOptions): Prom
         return res || data.toLowerCase().includes(curr);
       }, false);
       if (containsError) {
-        logger.error(data);
+        process.stderr.write(chalk.red(data));
       }
     });
     child.on('exit', (code) => {
